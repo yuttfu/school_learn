@@ -1,0 +1,376 @@
+<mujoco model="traffic_scene_v2">
+  <compiler angle="degree" coordinate="local" inertiafromgeom="true" autolimits="true"/>
+
+  <option timestep="0.001" gravity="0 0 -9.81" iterations="50" ls_iterations="20">
+    <flag warmstart="enable" contact="enable" override="enable"/>
+  </option>
+
+  <visual>
+    <global offwidth="1920" offheight="1080"/>
+    <quality shadowsize="4096"/>
+    <map force="0.1" fogstart="10" fogend="100" znear="0.05"/>
+    <headlight ambient="0.6 0.6 0.6" diffuse="0.8 0.8 0.8"/>
+    <rgba haze="0.8 0.9 1 1"/>
+  </visual>
+
+  <asset>
+    <!-- 高质量纹理 -->
+    <texture name="asphalt_hq" type="2d" builtin="checker" rgb1="0.15 0.15 0.15" rgb2="0.2 0.2 0.2" width="1024" height="1024"/>
+    <material name="road_hq" texture="asphalt_hq" texrepeat="100 100" specular="0.05" shininess="0.05"/>
+
+    <texture name="grass_tex" type="2d" builtin="flat" rgb1="0.2 0.4 0.2" width="256" height="256"/>
+    <material name="grass_mat" texture="grass_tex" specular="0" shininess="0"/>
+
+    <texture name="car_paint_blue" type="2d" builtin="flat" rgb1="0.1 0.3 0.7" width="64" height="64"/>
+    <material name="car_blue" texture="car_paint_blue" specular="1" shininess="0.8" reflectance="0.5"/>
+
+    <texture name="car_paint_red" type="2d" builtin="flat" rgb1="0.8 0.1 0.1" width="64" height="64"/>
+    <material name="car_red" texture="car_paint_red" specular="1" shininess="0.8" reflectance="0.5"/>
+
+    <texture name="car_paint_silver" type="2d" builtin="flat" rgb1="0.7 0.7 0.75" width="64" height="64"/>
+    <material name="car_silver" texture="car_paint_silver" specular="1" shininess="0.9" reflectance="0.6"/>
+
+    <texture name="glass_tex" type="2d" builtin="flat" rgb1="0.3 0.4 0.5" width="32" height="32"/>
+    <material name="glass" texture="glass_tex" specular="1" shininess="1" reflectance="0.7" rgba="0.3 0.4 0.5 0.7"/>
+
+    <texture name="chrome" type="2d" builtin="flat" rgb1="0.9 0.9 0.95" width="32" height="32"/>
+    <material name="chrome_mat" texture="chrome" specular="1" shininess="1" reflectance="0.9"/>
+
+    <texture name="rubber" type="2d" builtin="flat" rgb1="0.05 0.05 0.05" width="32" height="32"/>
+    <material name="tire_mat" texture="rubber" specular="0.2" shininess="0.1"/>
+
+    <texture name="white_line" type="2d" builtin="flat" rgb1="1 1 1" width="32" height="32"/>
+    <material name="white_mat" texture="white_line" specular="0.3" shininess="0.2"/>
+
+  </asset>
+
+  <default>
+    <!-- 车辆悬挂默认配置 -->
+    <default class="suspension">
+      <joint type="slide" axis="0 0 1" range="-0.1 0.1" stiffness="50000" damping="5000"/>
+    </default>
+
+    <!-- 转向关节配置 -->
+    <default class="steering">
+      <joint type="hinge" axis="0 0 1" range="-35 35" damping="10" armature="0.1"/>
+    </default>
+
+    <!-- 车轮滚动关节 -->
+    <default class="wheel_roll">
+      <joint type="hinge" axis="0 1 0" damping="0.5" armature="0.05"/>
+    </default>
+
+    <!-- 轮胎配置 -->
+    <default class="tire">
+      <geom type="cylinder" friction="1.5 0.8 0.5" condim="3" solimp="0.9 0.95 0.001" solref="0.005 1"/>
+    </default>
+  </default>
+
+  <worldbody>
+    <!-- 天空盒 -->
+
+    <!-- 增强照明 -->
+    <light directional="true" pos="0 0 30" dir="0 0 -1" diffuse="0.9 0.9 0.9" specular="0.3 0.3 0.3"/>
+    <light directional="true" pos="50 50 40" dir="-1 -1 -1" diffuse="0.4 0.4 0.4"/>
+    <light directional="true" pos="-50 50 40" dir="1 -1 -1" diffuse="0.4 0.4 0.4"/>
+    <light directional="false" pos="0 0 10" diffuse="0.2 0.2 0.2" specular="0.1 0.1 0.1"/>
+
+    <!-- 地面 -->
+    <geom name="ground" type="plane" size="200 200 0.1" material="grass_mat" condim="3"/>
+
+    <!-- 主路面 - 更长更宽 -->
+    <geom name="main_road" type="box" size="100 6.0 0.08" pos="0 0 0.08" material="road_hq" mass="50000"/>
+
+    <!-- 精细车道线 -->
+    <geom name="left_edge" type="capsule" fromto="-100 6.0 0.17 100 6.0 0.17" size="0.06" rgba="1 1 1 1"/>
+    <geom name="right_edge" type="capsule" fromto="-100 -6.0 0.17 100 -6.0 0.17" size="0.06" rgba="1 1 1 1"/>
+
+    <!-- 虚线车道标记 -->
+    <body name="lane_markers">
+      <geom name="lm_1_1" type="box" size="3 0.1 0.01" pos="-90 2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_1_2" type="box" size="3 0.1 0.01" pos="-75 2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_1_3" type="box" size="3 0.1 0.01" pos="-60 2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_1_4" type="box" size="3 0.1 0.01" pos="-45 2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_1_5" type="box" size="3 0.1 0.01" pos="-30 2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_1_6" type="box" size="3 0.1 0.01" pos="-15 2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_1_7" type="box" size="3 0.1 0.01" pos="0 2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_1_8" type="box" size="3 0.1 0.01" pos="15 2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_1_9" type="box" size="3 0.1 0.01" pos="30 2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_1_10" type="box" size="3 0.1 0.01" pos="45 2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_1_11" type="box" size="3 0.1 0.01" pos="60 2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_1_12" type="box" size="3 0.1 0.01" pos="75 2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_1_13" type="box" size="3 0.1 0.01" pos="90 2 0.17" rgba="1 1 1 1"/>
+
+      <geom name="lm_2_1" type="box" size="3 0.1 0.01" pos="-90 -2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_2_2" type="box" size="3 0.1 0.01" pos="-75 -2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_2_3" type="box" size="3 0.1 0.01" pos="-60 -2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_2_4" type="box" size="3 0.1 0.01" pos="-45 -2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_2_5" type="box" size="3 0.1 0.01" pos="-30 -2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_2_6" type="box" size="3 0.1 0.01" pos="-15 -2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_2_7" type="box" size="3 0.1 0.01" pos="0 -2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_2_8" type="box" size="3 0.1 0.01" pos="15 -2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_2_9" type="box" size="3 0.1 0.01" pos="30 -2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_2_10" type="box" size="3 0.1 0.01" pos="45 -2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_2_11" type="box" size="3 0.1 0.01" pos="60 -2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_2_12" type="box" size="3 0.1 0.01" pos="75 -2 0.17" rgba="1 1 1 1"/>
+      <geom name="lm_2_13" type="box" size="3 0.1 0.01" pos="90 -2 0.17" rgba="1 1 1 1"/>
+    </body>
+
+    <!-- 改进的主车 - 基于真实车辆尺寸 (类似轿车) -->
+    <body name="ego_vehicle" pos="-30 0 0.5">
+      <freejoint/>
+      <inertial pos="0 0 0.15" mass="1450" diaginertia="580 1950 2180"/>
+
+      <!-- 车身主体 - 更细致的分段 -->
+      <!-- 底盘 -->
+      <geom name="ego_chassis_bottom" type="box" size="2.0 0.9 0.08" pos="0 0 -0.02" material="car_blue"/>
+
+      <!-- 车身中部 -->
+      <geom name="ego_chassis_mid" type="box" size="1.8 0.88 0.3" pos="0 0 0.25" material="car_blue"/>
+
+      <!-- 引擎盖（流线型） -->
+      <geom name="ego_hood" type="box" size="0.85 0.85 0.12" pos="-1.45 0 0.18" material="car_blue"/>
+      <geom name="ego_hood_front" type="capsule" fromto="-2.2 0 0.2 -2.0 0 0.25" size="0.4" material="car_blue"/>
+
+      <!-- 车顶 -->
+      <geom name="ego_roof" type="box" size="1.1 0.82 0.25" pos="0.3 0 0.65" material="car_blue"/>
+
+      <!-- 后备箱 -->
+      <geom name="ego_trunk" type="box" size="0.75 0.85 0.18" pos="1.6 0 0.22" material="car_blue"/>
+      <geom name="ego_trunk_back" type="capsule" fromto="2.15 0 0.25 2.0 0 0.2" size="0.35" material="car_blue"/>
+
+      <!-- 窗户 -->
+      <geom name="ego_windshield" type="box" size="0.7 0.75 0.35" pos="-0.5 0 0.7" rgba="0.3 0.4 0.5 0.6"/>
+      <geom name="ego_rear_window" type="box" size="0.5 0.75 0.3" pos="1.3 0 0.65" rgba="0.3 0.4 0.5 0.6"/>
+      <geom name="ego_window_left" type="box" size="1.0 0.02 0.25" pos="0.3 0.88 0.6" rgba="0.3 0.4 0.5 0.6"/>
+      <geom name="ego_window_right" type="box" size="1.0 0.02 0.25" pos="0.3 -0.88 0.6" rgba="0.3 0.4 0.5 0.6"/>
+
+      <!-- 保险杠 -->
+      <geom name="ego_bumper_front" type="box" size="0.15 0.9 0.12" pos="-2.3 0 0.08" rgba="0.2 0.2 0.2 1"/>
+      <geom name="ego_bumper_rear" type="box" size="0.15 0.9 0.12" pos="2.25 0 0.08" rgba="0.2 0.2 0.2 1"/>
+
+      <!-- 车灯 -->
+      <geom name="ego_headlight_l" type="sphere" size="0.08" pos="-2.2 0.6 0.3" rgba="0.95 0.95 1 1"/>
+      <geom name="ego_headlight_r" type="sphere" size="0.08" pos="-2.2 -0.6 0.3" rgba="0.95 0.95 1 1"/>
+      <geom name="ego_taillight_l" type="sphere" size="0.07" pos="2.2 0.65 0.3" rgba="0.9 0.1 0.1 1"/>
+      <geom name="ego_taillight_r" type="sphere" size="0.07" pos="2.2 -0.65 0.3" rgba="0.9 0.1 0.1 1"/>
+
+      <!-- 后视镜 -->
+      <geom name="ego_mirror_l" type="box" size="0.08 0.05 0.06" pos="-0.6 1.0 0.5" rgba="0.1 0.1 0.1 1"/>
+      <geom name="ego_mirror_r" type="box" size="0.08 0.05 0.06" pos="-0.6 -1.0 0.5" rgba="0.1 0.1 0.1 1"/>
+
+      <!-- 改进的悬挂和车轮系统 -->
+      <!-- 左前悬挂和车轮 -->
+      <body name="suspension_fl" pos="-1.15 1.0 0">
+        <joint name="susp_fl" class="suspension"/>
+        <inertial pos="0 0 0" mass="15" diaginertia="0.5 0.5 0.5"/>
+
+        <body name="wheel_hub_fl" pos="0 0 -0.1">
+          <joint name="steer_fl" class="steering"/>
+          <inertial pos="0 0 0" mass="8" diaginertia="0.3 0.3 0.3"/>
+
+          <body name="wheel_fl" pos="0 0.05 0">
+            <joint name="roll_fl" class="wheel_roll"/>
+            <inertial pos="0 0 0" mass="18" diaginertia="0.8 1.2 0.8"/>
+            <geom name="tire_fl" type="cylinder" size="0.33 0.12" rgba="0.05 0.05 0.05 1" material="tire_mat" class="tire"/>
+            <geom name="rim_fl" type="cylinder" size="0.25 0.11" pos="0 0 0" rgba="0.8 0.8 0.85 1" material="chrome_mat"/>
+            <site name="contact_fl" pos="0 0 -0.33" size="0.01"/>
+          </body>
+        </body>
+      </body>
+
+      <!-- 右前悬挂和车轮 -->
+      <body name="suspension_fr" pos="-1.15 -1.0 0">
+        <joint name="susp_fr" class="suspension"/>
+        <inertial pos="0 0 0" mass="15" diaginertia="0.5 0.5 0.5"/>
+
+        <body name="wheel_hub_fr" pos="0 0 -0.1">
+          <joint name="steer_fr" class="steering"/>
+          <inertial pos="0 0 0" mass="8" diaginertia="0.3 0.3 0.3"/>
+
+          <body name="wheel_fr" pos="0 -0.05 0">
+            <joint name="roll_fr" class="wheel_roll"/>
+            <inertial pos="0 0 0" mass="18" diaginertia="0.8 1.2 0.8"/>
+            <geom name="tire_fr" type="cylinder" size="0.33 0.12" rgba="0.05 0.05 0.05 1" material="tire_mat" class="tire"/>
+            <geom name="rim_fr" type="cylinder" size="0.25 0.11" pos="0 0 0" rgba="0.8 0.8 0.85 1" material="chrome_mat"/>
+            <site name="contact_fr" pos="0 0 -0.33" size="0.01"/>
+          </body>
+        </body>
+      </body>
+
+      <!-- 左后悬挂和车轮 -->
+      <body name="suspension_rl" pos="1.15 1.0 0">
+        <joint name="susp_rl" class="suspension"/>
+        <inertial pos="0 0 0" mass="15" diaginertia="0.5 0.5 0.5"/>
+
+        <body name="wheel_rl" pos="0 0.05 -0.1">
+          <joint name="roll_rl" class="wheel_roll"/>
+          <inertial pos="0 0 0" mass="18" diaginertia="0.8 1.2 0.8"/>
+          <geom name="tire_rl" type="cylinder" size="0.33 0.12" rgba="0.05 0.05 0.05 1" material="tire_mat" class="tire"/>
+          <geom name="rim_rl" type="cylinder" size="0.25 0.11" pos="0 0 0" rgba="0.8 0.8 0.85 1" material="chrome_mat"/>
+          <site name="contact_rl" pos="0 0 -0.33" size="0.01"/>
+        </body>
+      </body>
+
+      <!-- 右后悬挂和车轮 -->
+      <body name="suspension_rr" pos="1.15 -1.0 0">
+        <joint name="susp_rr" class="suspension"/>
+        <inertial pos="0 0 0" mass="15" diaginertia="0.5 0.5 0.5"/>
+
+        <body name="wheel_rr" pos="0 -0.05 -0.1">
+          <joint name="roll_rr" class="wheel_roll"/>
+          <inertial pos="0 0 0" mass="18" diaginertia="0.8 1.2 0.8"/>
+          <geom name="tire_rr" type="cylinder" size="0.33 0.12" rgba="0.05 0.05 0.05 1" material="tire_mat" class="tire"/>
+          <geom name="rim_rr" type="cylinder" size="0.25 0.11" pos="0 0 0" rgba="0.8 0.8 0.85 1" material="chrome_mat"/>
+          <site name="contact_rr" pos="0 0 -0.33" size="0.01"/>
+        </body>
+      </body>
+
+      <!-- 传感器挂载点 -->
+      <site name="lidar_mount" pos="-2.0 0 0.9" size="0.08" rgba="0 1 0 0.5"/>
+      <site name="camera_front" pos="-2.3 0 0.6" size="0.04" rgba="1 0 0 0.5"/>
+      <site name="camera_rear" pos="2.3 0 0.6" size="0.04" rgba="1 0 0 0.5"/>
+      <site name="imu_center" pos="0 0 0.3" size="0.03" rgba="1 1 0 0.5"/>
+      <site name="gps_antenna" pos="0 0 1.1" size="0.02" rgba="0 0 1 0.5"/>
+    </body>
+
+    <!-- 改进的NPC车辆 - 红色SUV -->
+    <body name="npc_vehicle_1" pos="-10 0 0.5">
+      <freejoint/>
+      <inertial pos="0 0 0.2" mass="1800" diaginertia="700 2200 2400"/>
+
+      <!-- SUV车身 -->
+      <geom name="npc1_chassis" type="box" size="2.2 0.95 0.35" pos="0 0 0.15" material="car_red"/>
+      <geom name="npc1_roof" type="box" size="1.5 0.9 0.3" pos="0 0 0.65" material="car_red"/>
+      <geom name="npc1_hood" type="box" size="0.9 0.9 0.15" pos="-1.6 0 0.2" material="car_red"/>
+      <geom name="npc1_trunk" type="box" size="0.8 0.9 0.25" pos="1.7 0 0.25" material="car_red"/>
+
+      <!-- 窗户 -->
+      <geom name="npc1_windows" type="box" size="1.3 0.85 0.25" pos="0 0 0.7" rgba="0.2 0.3 0.4 0.5"/>
+
+      <!-- 车轮 -->
+      <geom name="npc1_wheel_fl" type="cylinder" size="0.35 0.13" pos="-1.2 1.0 -0.15" rgba="0.05 0.05 0.05 1" material="tire_mat"/>
+      <geom name="npc1_rim_fl" type="cylinder" size="0.28 0.12" pos="-1.2 1.0 -0.15" material="chrome_mat"/>
+      <geom name="npc1_wheel_fr" type="cylinder" size="0.35 0.13" pos="-1.2 -1.0 -0.15" rgba="0.05 0.05 0.05 1" material="tire_mat"/>
+      <geom name="npc1_rim_fr" type="cylinder" size="0.28 0.12" pos="-1.2 -1.0 -0.15" material="chrome_mat"/>
+      <geom name="npc1_wheel_rl" type="cylinder" size="0.35 0.13" pos="1.2 1.0 -0.15" rgba="0.05 0.05 0.05 1" material="tire_mat"/>
+      <geom name="npc1_rim_rl" type="cylinder" size="0.28 0.12" pos="1.2 1.0 -0.15" material="chrome_mat"/>
+      <geom name="npc1_wheel_rr" type="cylinder" size="0.35 0.13" pos="1.2 -1.0 -0.15" rgba="0.05 0.05 0.05 1" material="tire_mat"/>
+      <geom name="npc1_rim_rr" type="cylinder" size="0.28 0.12" pos="1.2 -1.0 -0.15" material="chrome_mat"/>
+
+      <!-- 车灯 -->
+      <geom name="npc1_headlight_l" type="sphere" size="0.08" pos="-2.3 0.7 0.35" rgba="1 1 0.95 1"/>
+      <geom name="npc1_headlight_r" type="sphere" size="0.08" pos="-2.3 -0.7 0.35" rgba="1 1 0.95 1"/>
+    </body>
+
+    <!-- NPC车辆2 - 银色轿车 -->
+    <body name="npc_vehicle_2" pos="-20 -4 0.45">
+      <freejoint/>
+      <inertial pos="0 0 0.15" mass="1350" diaginertia="550 1850 2050"/>
+
+      <geom name="npc2_chassis" type="box" size="2.0 0.85 0.28" pos="0 0 0.12" material="car_silver"/>
+      <geom name="npc2_roof" type="box" size="1.0 0.8 0.24" pos="0.2 0 0.52" material="car_silver"/>
+      <geom name="npc2_hood" type="capsule" fromto="-1.8 0 0.2 -1.5 0 0.25" size="0.42" material="car_silver"/>
+      <geom name="npc2_trunk" type="capsule" fromto="1.7 0 0.2 1.5 0 0.25" size="0.38" material="car_silver"/>
+
+      <geom name="npc2_windows" type="box" size="0.9 0.75 0.2" pos="0.2 0 0.55" rgba="0.2 0.3 0.4 0.5"/>
+
+      <!-- 车轮 -->
+      <geom name="npc2_tire_fl" type="cylinder" size="0.32 0.11" pos="-1.1 0.92 -0.15" rgba="0.05 0.05 0.05 1" material="tire_mat"/>
+      <geom name="npc2_rim_fl" type="cylinder" size="0.26 0.10" pos="-1.1 0.92 -0.15" material="chrome_mat"/>
+      <geom name="npc2_tire_fr" type="cylinder" size="0.32 0.11" pos="-1.1 -0.92 -0.15" rgba="0.05 0.05 0.05 1" material="tire_mat"/>
+      <geom name="npc2_rim_fr" type="cylinder" size="0.26 0.10" pos="-1.1 -0.92 -0.15" material="chrome_mat"/>
+      <geom name="npc2_tire_rl" type="cylinder" size="0.32 0.11" pos="1.1 0.92 -0.15" rgba="0.05 0.05 0.05 1" material="tire_mat"/>
+      <geom name="npc2_rim_rl" type="cylinder" size="0.26 0.10" pos="1.1 0.92 -0.15" material="chrome_mat"/>
+      <geom name="npc2_tire_rr" type="cylinder" size="0.32 0.11" pos="1.1 -0.92 -0.15" rgba="0.05 0.05 0.05 1" material="tire_mat"/>
+      <geom name="npc2_rim_rr" type="cylinder" size="0.26 0.10" pos="1.1 -0.92 -0.15" material="chrome_mat"/>
+    </body>
+
+    <!-- NPC车辆3 - 蓝色跑车 -->
+    <body name="npc_vehicle_3" pos="-40 4 0.4">
+      <freejoint/>
+      <inertial pos="0 0 0.1" mass="1200" diaginertia="480 1650 1800"/>
+
+      <!-- 跑车低矮车身 -->
+      <geom name="npc3_chassis" type="box" size="1.9 0.9 0.22" pos="0 0 0.08" rgba="0.05 0.15 0.4 1"/>
+      <geom name="npc3_cabin" type="box" size="0.9 0.82 0.18" pos="0.3 0 0.38" rgba="0.05 0.15 0.4 1"/>
+      <geom name="npc3_hood" type="capsule" fromto="-1.7 0 0.15 -1.4 0 0.18" size="0.40" rgba="0.05 0.15 0.4 1"/>
+
+      <geom name="npc3_windshield" type="box" size="0.6 0.75 0.15" pos="-0.1 0 0.42" rgba="0.15 0.2 0.3 0.6"/>
+
+      <!-- 运动轮毂 -->
+      <geom name="npc3_tire_fl" type="cylinder" size="0.31 0.14" pos="-1.0 0.95 -0.15" rgba="0.05 0.05 0.05 1" material="tire_mat"/>
+      <geom name="npc3_rim_fl" type="cylinder" size="0.25 0.13" pos="-1.0 0.95 -0.15" rgba="0.9 0.9 0.95 1"/>
+      <geom name="npc3_tire_fr" type="cylinder" size="0.31 0.14" pos="-1.0 -0.95 -0.15" rgba="0.05 0.05 0.05 1" material="tire_mat"/>
+      <geom name="npc3_rim_fr" type="cylinder" size="0.25 0.13" pos="-1.0 -0.95 -0.15" rgba="0.9 0.9 0.95 1"/>
+      <geom name="npc3_tire_rl" type="cylinder" size="0.31 0.14" pos="1.0 0.95 -0.15" rgba="0.05 0.05 0.05 1" material="tire_mat"/>
+      <geom name="npc3_rim_rl" type="cylinder" size="0.25 0.13" pos="1.0 0.95 -0.15" rgba="0.9 0.9 0.95 1"/>
+      <geom name="npc3_tire_rr" type="cylinder" size="0.31 0.14" pos="1.0 -0.95 -0.15" rgba="0.05 0.05 0.05 1" material="tire_mat"/>
+      <geom name="npc3_rim_rr" type="cylinder" size="0.25 0.13" pos="1.0 -0.95 -0.15" rgba="0.9 0.9 0.95 1"/>
+    </body>
+
+    <!-- 交通设施 -->
+    <body name="traffic_light" pos="10 7.5 0">
+      <geom name="light_pole" type="cylinder" size="0.12 3.5" rgba="0.25 0.25 0.25 1"/>
+      <body name="light_box" pos="0 0 3.5">
+        <geom name="light_housing" type="box" size="0.25 0.35 0.8" rgba="0.15 0.15 0.15 1"/>
+        <geom name="red_light" type="sphere" size="0.18" pos="0 -0.4 0.45" rgba="0.9 0.1 0.1 1"/>
+        <geom name="yellow_light" type="sphere" size="0.18" pos="0 -0.4 0" rgba="0.3 0.3 0.05 1"/>
+        <geom name="green_light" type="sphere" size="0.18" pos="0 -0.4 -0.45" rgba="0.1 0.9 0.1 1"/>
+      </body>
+    </body>
+
+    <!-- 路障 -->
+    <body name="cone_1" pos="0 5.8 0.15">
+      <geom name="cone1" type="cylinder" fromto="0 0 -0.15 0 0 0.45" size="0.15 0.45" rgba="1 0.4 0 1"/>
+    </body>
+    <body name="cone_2" pos="15 5.8 0.15">
+      <geom name="cone2" type="cylinder" fromto="0 0 -0.15 0 0 0.45" size="0.15 0.45" rgba="1 0.4 0 1"/>
+    </body>
+  </worldbody>
+
+  <!-- 传感器 -->
+  <sensor>
+    <!-- 主车传感器 -->
+    <framepos name="ego_position" objtype="site" objname="imu_center"/>
+    <framequat name="ego_orientation" objtype="site" objname="imu_center"/>
+    <framelinvel name="ego_linvel" objtype="site" objname="imu_center"/>
+    <frameangvel name="ego_angvel" objtype="site" objname="imu_center"/>
+    <accelerometer name="ego_accel" site="imu_center"/>
+    <gyro name="ego_gyro" site="imu_center"/>
+
+    <!-- 车轮传感器 -->
+    <jointvel name="wheel_fl_speed" joint="roll_fl"/>
+    <jointvel name="wheel_fr_speed" joint="roll_fr"/>
+    <jointvel name="wheel_rl_speed" joint="roll_rl"/>
+    <jointvel name="wheel_rr_speed" joint="roll_rr"/>
+
+    <!-- 转向传感器 -->
+    <jointpos name="steer_fl_angle" joint="steer_fl"/>
+    <jointpos name="steer_fr_angle" joint="steer_fr"/>
+
+    <!-- 悬挂传感器 -->
+    <jointpos name="susp_fl_pos" joint="susp_fl"/>
+    <jointpos name="susp_fr_pos" joint="susp_fr"/>
+    <jointpos name="susp_rl_pos" joint="susp_rl"/>
+    <jointpos name="susp_rr_pos" joint="susp_rr"/>
+
+    <!-- 接触力传感器 -->
+    <touch name="contact_fl" site="contact_fl"/>
+    <touch name="contact_fr" site="contact_fr"/>
+    <touch name="contact_rl" site="contact_rl"/>
+    <touch name="contact_rr" site="contact_rr"/>
+  </sensor>
+
+  <!-- 执行器 -->
+  <actuator>
+    <!-- 转向系统（阿克曼转向） - 分离控制 -->
+    <position name="steer_left" joint="steer_fl" kp="800" kv="80" ctrlrange="-0.61 0.61" forcerange="-300 300"/>
+    <position name="steer_right" joint="steer_fr" kp="800" kv="80" ctrlrange="-0.61 0.61" forcerange="-300 300"/>
+
+    <!-- 驱动系统（后轮驱动） - 分离控制 -->
+    <motor name="drive_left" joint="roll_rl" gear="100" ctrlrange="-800 800" ctrllimited="true"/>
+    <motor name="drive_right" joint="roll_rr" gear="100" ctrlrange="-800 800" ctrllimited="true"/>
+  </actuator>
+
+</mujoco>
